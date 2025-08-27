@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>❤️ 七夕限定卡池 · 抽卡模拟 ❤️</title>
+  <meta name="description" content="七夕限定卡池·抽卡模拟—支持自定义奖池、概率公示、历史记录与导出（纯前端单文件版）。" />
+  <style>
+    :root{
+      --bg:#0b0b12; --card:#121222; --muted:#7b7b9a; --text:#f2f2f8; --sub:#c5c5d6; --btn:#4f46e5; --btn2:#9333ea; --ok:#22c55e; --danger:#ef4444; --accent:#eab308;
+      --ring: rgba(147,51,234,.35);
+    }
+    html,body{height:100%}
+    body{margin:0; font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica Neue, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background:radial-gradient(1200px 600px at 75% -10%, #27276122, transparent), linear-gradient(180deg,#0b0b12,#0a0a10 60%); color:var(--text)}
+    .wrap{max-width:1080px; margin:0 auto; padding:24px}
+    .title{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .title h1{margin:0; font-size:clamp(20px,3.4vw,36px); letter-spacing:.5px}
+    .badge{padding:4px 10px; border-radius:999px; background:linear-gradient(120deg,#ff6ec7,#7c3aed); font-weight:700}
+    .sub{color:var(--sub)}
+
+    .grid{display:grid; grid-template-columns: 1.3fr .9fr; gap:18px}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+
+    .card{background:linear-gradient(180deg,#111127ee,#0e0e1dee); border:1px solid #2a2a49; border-radius:18px; padding:18px; box-shadow: 0 8px 30px rgba(0,0,0,.35)}
+    .card h2{margin:0 0 12px; font-size:18px}
+
+    .toolbar{display:flex; gap:10px; flex-wrap:wrap}
+    button{appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:700; color:white; cursor:pointer; transition: transform .05s ease, box-shadow .2s ease, filter .15s}
+    button:active{transform:translateY(1px)}
+    .btn{background:linear-gradient(180deg,#6366f1,#4f46e5); box-shadow:0 6px 20px rgba(79,70,229,.35)}
+    .btn2{background:linear-gradient(180deg,#a855f7,#7c3aed); box-shadow:0 6px 20px rgba(124,58,237,.35)}
+    .btn-ghost{background:#1b1b31; color:#d7d7ef; border:1px solid #2f2f57}
+    .btn-danger{background:linear-gradient(180deg,#f97316,#ef4444)}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#161631; border:1px solid #2f2f57; color:#e5e7ff}
+
+    .stat{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+    .ok{color:var(--ok)}
+    .muted{color:var(--muted)}
+
+    .list{display:flex; flex-direction:column; gap:10px; max-height:300px; overflow:auto; padding-right:6px}
+    .row{display:flex; align-items:center; gap:10px; background:#0f0f21; border:1px solid #232348; padding:10px; border-radius:12px}
+    .tag{font-size:12px; font-weight:900; padding:2px 8px; border-radius:999px; border:1px solid #2a2a49}
+    .tag.UR{background:linear-gradient(90deg,#fde04733,#eab30822); color:#fde68a; border-color:#eab30855}
+    .tag.SSR{background:#7c3aed26; color:#c4b5fd; border-color:#7c3aed66}
+    .tag.SR{background:#0596691f; color:#86efac; border-color:#10b98166}
+    .tag.R{background:#0284c71a; color:#93c5fd; border-color:#38bdf866}
+
+    table{width:100%; border-collapse:collapse; font-size:14px}
+    th,td{padding:10px; border-bottom:1px dashed #2f2f57; text-align:left}
+    th{color:#cbd5ff}
+
+    textarea{width:100%; min-height:220px; background:#0f0f21; color:#e6e6ff; border:1px solid #2f2f57; border-radius:12px; padding:12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono"}
+
+    .toast{position:fixed; inset:16px 16px auto auto; background:#161631; color:#dfe1ff; border:1px solid #3a3a66; border-radius:14px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.35); display:none}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; display:none; place-items:center; backdrop-filter: blur(6px); background:rgba(9,9,16,.55)}
+    .modal.open{display:grid}
+    .dialog{width:min(680px,92vw); background:linear-gradient(180deg,#13132a,#0e0e1e); border:1px solid #2a2a49; border-radius:20px; padding:16px; box-shadow:0 30px 80px rgba(0,0,0,.55)}
+    .dialog h3{margin:6px 0 12px 0}
+
+    .result-grid{display:grid; grid-template-columns: repeat(2,1fr); gap:10px}
+    @media (max-width:520px){ .result-grid{grid-template-columns: 1fr} }
+
+    .glow{box-shadow:0 0 0 2px var(--ring), 0 10px 40px rgba(124,58,237,.25)}
+
+    /* confetti (simple) */
+    .confetti{pointer-events:none; position:fixed; inset:0; overflow:hidden; z-index:50}
+    .confetti i{position:absolute; width:8px; height:14px; background:linear-gradient(180deg,#fde047,#f59e0b); animation: fall 1.8s linear forwards; opacity:.9}
+    @keyframes fall{ to{ transform: translateY(110vh) rotate(600deg)} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <span class="badge">七夕限定卡池</span>
+      <h1>❤️ 一发入魂 · 抽卡模拟 ❤️</h1>
+    </div>
+    <p class="sub">@群友 编辑发送「咱俩试试？」 即有机会获得限定 SSR「好呀宝宝」 · <b>抽取日期：</b>2025-08-29 之前</p>
+
+    <div class="grid" role="main">
+      <!-- 左侧：抽卡与记录 -->
+      <section class="card">
+        <h2>抽卡面板</h2>
+        <div class="toolbar" style="margin-bottom:12px">
+          <button class="btn" id="draw1">单抽</button>
+          <button class="btn2" id="draw10">十连</button>
+          <button class="btn-ghost" id="clearHistory">清空记录</button>
+          <span class="chip" id="ready">就绪 ✅</span>
+        </div>
+        <div class="stat">
+          <div class="chip glow">出货统计 <b id="totalPulls">0</b> 抽</div>
+          <div class="muted">UR：<span id="urRate">0.00%</span> · SSR：<span id="ssrRate">0.00%</span> · SR：<span id="srRate">0.00%</span></div>
+          <div style="flex:1"></div>
+          <button class="btn-ghost" id="exportBtn">导出</button>
+          <button class="btn-ghost" id="historyBtn">历史记录</button>
+        </div>
+        <div id="history" class="list" style="margin-top:12px" aria-live="polite"></div>
+      </section>
+
+      <!-- 右侧：概率公示 + 配置 -->
+      <aside class="card">
+        <h2>概率公示 <span class="muted" style="font-weight:400">· Tip：SSR 超低概率，非酋请量力而抽。</span></h2>
+        <table id="table">
+          <thead><tr><th>结果</th><th>标签</th><th>概率</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="muted" style="margin-top:10px">⚠️ 本页面仅用于娱乐，你可以自定义奖池文本与概率，带来更合群的梗味体验。</p>
+        <h2 style="margin-top:18px">自定义配置 <span class="muted">（可将下方 JSON 粘贴覆盖）</span></h2>
+        <p class="muted">字段：<code>label</code> 文案，<code>weight</code> 概率占比（总和=100），<code>tag</code>（UR/SSR/SR/R），<code>type</code> 特效（<code>ur</code>｜<code>ssr</code>｜<code>image</code>｜<code>quote</code>）。</p>
+        <textarea id="config"></textarea>
+        <div class="toolbar" style="margin-top:10px">
+          <button class="btn" id="apply">应用配置</button>
+          <button class="btn-ghost" id="reset">还原默认</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Modal 结果 -->
+  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <div style="display:flex; align-items:center; gap:10px; justify-content:space-between">
+        <h3>抽取结果</h3>
+        <button class="btn-ghost" id="closeModal">关闭</button>
+      </div>
+      <div id="result" class="result-grid" style="margin-top:6px"></div>
+    </div>
+  </div>
+  <div class="confetti" id="confetti" hidden></div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+  // ====== 默认卡池 ======
+  const DEFAULT_POOL = [
+    { label: "UR『一眼万年』", weight: 0.3, tag: "UR", type: "ur" },
+    { label: "SSR『好呀宝宝』", weight: 1.2, tag: "SSR", type: "ssr" },
+    { label: "SSR『心有灵犀』", weight: 1.0, tag: "SSR" },
+    { label: "SR『七夕限定头像框』", weight: 6.0, tag: "SR" },
+    { label: "SR『雨过天晴·称号』", weight: 6.5, tag: "SR" },
+    { label: "R『牛郎织女·周边券』", weight: 25, tag: "R" },
+    { label: "R『心动签到+1』", weight: 60, tag: "R" }
+  ];
+
+  // ====== DOM ======
+  const $ = s=>document.querySelector(s);
+  const tableBody = $('#table tbody');
+  const historyEl = $('#history');
+  const toast = $('#toast');
+  const modal = $('#modal');
+  const resultGrid = $('#result');
+  const confetti = $('#confetti');
+  const totalPullsEl = $('#totalPulls');
+  const rates = { ur: $('#urRate'), ssr: $('#ssrRate'), sr: $('#srRate') };
+
+  // ====== State ======
+  let pool = JSON.parse(localStorage.getItem('pool')||'null') || DEFAULT_POOL.slice();
+  let history = JSON.parse(localStorage.getItem('history')||'[]');
+  let counts = JSON.parse(localStorage.getItem('counts')||'null') || {total: history.length, UR:0, SSR:0, SR:0};
+  // hydrate counts from history (first load)
+  if(counts.total===history.length && counts.total>0 && (counts.UR+counts.SSR+counts.SR===0)){
+    for(const r of history){ if(r.tag && counts[r.tag]!==undefined) counts[r.tag]++; }
+  }
+
+  // ====== Utils ======
+  const sum = arr => arr.reduce((a,b)=>a+b,0);
+  const clamp2 = n => (Math.round(n*100)/100).toFixed(2);
+  const save = () => { localStorage.setItem('pool', JSON.stringify(pool)); localStorage.setItem('history', JSON.stringify(history)); localStorage.setItem('counts', JSON.stringify(counts)); };
+  const showToast = (msg) => { toast.textContent = msg; toast.style.display='block'; setTimeout(()=>toast.style.display='none', 1600); };
+
+  function renderTable(){
+    const totalWeight = sum(pool.map(i=>i.weight));
+    tableBody.innerHTML = '';
+    for(const item of pool){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${item.label}</td><td><span class="tag ${item.tag||''}">${item.tag||'-'}</span></td><td>${clamp2(100*item.weight/totalWeight)}%</td>`;
+      tableBody.appendChild(tr);
+    }
+    $('#config').value = JSON.stringify(pool, null, 2);
+  }
+
+  function renderHistory(){
+    historyEl.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    for(let i=history.length-1;i>=0;--i){
+      const r = history[i];
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<span class="tag ${r.tag||''}">${r.tag||'-'}</span><b>${r.label}</b><span class="muted">#${i+1}</span>`;
+      frag.appendChild(row);
+    }
+    historyEl.appendChild(frag);
+  }
+
+  function updateStats(){
+    totalPullsEl.textContent = String(counts.total);
+    const safe = (n)=> counts.total? clamp2(100*n/counts.total) : '0.00';
+    rates.ur.textContent = safe(counts.UR)+'%';
+    rates.ssr.textContent = safe(counts.SSR)+'%';
+    rates.sr.textContent = safe(counts.SR)+'%';
+  }
+
+  function weightedPick(){
+    const total = sum(pool.map(i=>i.weight));
+    let r = Math.random()*total;
+    for(const item of pool){
+      if((r-=item.weight) <= 0) return item;
+    }
+    return pool[pool.length-1];
+  }
+
+  function draw(n){
+    const picks = [];
+    for(let i=0;i<n;i++){ picks.push(structuredClone(weightedPick())); }
+    // pity: 保底机制（十连至少一张SR）
+    if(n>=10 && !picks.some(p=>p.tag==='SR' || p.tag==='SSR' || p.tag==='UR')){
+      const srPool = pool.filter(p=>p.tag==='SR' || p.tag==='SSR' || p.tag==='UR');
+      if(srPool.length) picks[picks.length-1] = structuredClone(srPool[Math.floor(Math.random()*srPool.length)]);
+    }
+    return picks;
+  }
+
+  function applySpecialEffects(items){
+    const hasUR = items.some(i=>i.tag==='UR' || i.type==='ur');
+    const hasSSR = items.some(i=>i.tag==='SSR' || i.type==='ssr');
+    if(hasUR) fireConfetti(120);
+    else if(hasSSR) fireConfetti(60);
+  }
+
+  function fireConfetti(n=60){
+    confetti.innerHTML='';
+    confetti.hidden=false;
+    const w = window.innerWidth;
+    for(let i=0;i<n;i++){
+      const e = document.createElement('i');
+      e.style.left = (Math.random()*w)+'px';
+      e.style.animationDelay = (Math.random()*0.6)+'s';
+      confetti.appendChild(e);
+    }
+    setTimeout(()=> confetti.hidden=true, 2200);
+  }
+
+  function openModal(items){
+    resultGrid.innerHTML = '';
+    for(const r of items){
+      const card = document.createElement('div');
+      card.className = 'row';
+      const tag = `<span class="tag ${r.tag||''}">${r.tag||'-'}</span>`;
+      let extra = '';
+      if(r.type==='image' && r.src){ extra = `<img src="${r.src}" alt="${r.label}" style="max-width:100%; border-radius:10px; border:1px solid #2a2a49" />`; }
+      if(r.type==='quote' && r.text){ extra = `<blockquote class="muted" style="margin:0; border-left:3px solid #45457a; padding-left:10px">“${r.text}”</blockquote>`; }
+      card.innerHTML = `${tag}<b>${r.label}</b>${extra}`;
+      resultGrid.appendChild(card);
+    }
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+  }
+
+  function addToHistory(items){
+    for(const it of items){
+      history.push({ label: it.label, tag: it.tag||null, at: Date.now() });
+      counts.total++;
+      if(it.tag && counts[it.tag]!==undefined) counts[it.tag]++;
+    }
+    save();
+    renderHistory();
+    updateStats();
+  }
+
+  function exportData(){
+    const data = { exportedAt: new Date().toISOString(), pool, history, counts };
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'qixi-pool-history.json';
+    a.click();
+  }
+
+  // ====== Bindings ======
+  $('#draw1').onclick = () => {
+    const r = draw(1); addToHistory(r); applySpecialEffects(r); openModal(r);
+  };
+  $('#draw10').onclick = () => {
+    const r = draw(10); addToHistory(r); applySpecialEffects(r); openModal(r);
+  };
+  $('#clearHistory').onclick = () => {
+    history = []; counts = { total:0, UR:0, SSR:0, SR:0 }; save(); renderHistory(); updateStats(); showToast('记录已清空');
+  };
+  $('#historyBtn').onclick = () => { openModal(history.slice(-10).map(h=>({label:h.label, tag:h.tag}))); };
+  $('#exportBtn').onclick = exportData;
+
+  $('#apply').onclick = () => {
+    try{
+      const next = JSON.parse($('#config').value);
+      if(!Array.isArray(next)) throw new Error('配置需为数组');
+      const sumW = sum(next.map(i=>Number(i.weight||0)));
+      if(Math.abs(sumW-100) > 0.001) throw new Error('权重之和需等于 100');
+      pool = next.map(x=>({ label:String(x.label||'-'), weight:Number(x.weight)||0, tag:x.tag||null, type:x.type||null, src:x.src||null, text:x.text||null }));
+      save(); renderTable(); showToast('配置已应用');
+    }catch(e){ showToast('配置错误：'+e.message); }
+  };
+  $('#reset').onclick = () => { pool = DEFAULT_POOL.slice(); save(); renderTable(); showToast('已恢复默认配置'); };
+  $('#closeModal').onclick = () => { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); };
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) $('#closeModal').click(); });
+
+  // ====== First render ======
+  renderTable(); renderHistory(); updateStats();
+  </script>
+</body>
+</html>
